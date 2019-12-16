@@ -1,0 +1,10 @@
+{
+	"name":"ScanTower",
+	"author":"volvary",
+	"version":"0.0.1",
+	"title":"Scanning Tower",
+	"homepage":"",
+	"description":"A circuit connected detection tower which can alert you of incoming biters. Keep it plugged for longer for a better range.",
+	"dependencies": ["base"],
+  "factorio_version": "0.17"
+}
