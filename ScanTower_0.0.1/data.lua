@@ -43,11 +43,11 @@ scan_tower = copyPrototype("accumulator", "accumulator", "scan-tower")
 
 scan_tower.energy_source = {
       type = "electric",
-      buffer_capacity = "600kW",
+      buffer_capacity = "600KJ",
       usage_priority = "secondary-input",
-      input_flow_limit = "330kW",
+      input_flow_limit = "450KW",
       output_flow_limit = "0W",
-      emissions_per_minute = 60
+      drain = "6W",
     }
 
 scan_tower_item = copyPrototype("item","accumulator","scan-tower")

@@ -1,34 +1,32 @@
+require("util")
+
 script.on_init(function()
   global = {
 
     -- towers[unit_number] = { eei, current_range, signals = {LuaCustomChartTag, unit}, circuit_outputs}
     towers = {},
 
-    TOWER_CONSUMPTION = 300,
+    TOWER_CONSUMPTION = 300000,
 
-    TOWER_MIN_RANGE = 150,
+    TOWER_MIN_RANGE = 75,
+    TOWER_MAX_RANGE = 250,
 
-    TOWER_MAX_RANGE = 400,
-
-    TOWER_INCREMENT_SPEED = 2,
-    TOWER_DECREMENT_SPEED = 4,
+    TOWER_INCREMENT_SPEED = 1,
+    TOWER_DECREMENT_SPEED = 2,
   }
 end)
 
 script.on_event({defines.events.on_tick}, function(e)
   if e.tick % 60 == 0 then
     for index,tower in pairs(global.towers) do
-      if tower.eei == nil then
-        --Remove all signals placed by tower, then delete from global.towers
-        --continue
-      else
+      if tower.eei ~= nil then
         if tower.eei.energy >= global.TOWER_CONSUMPTION then
           tower.eei.energy = tower.eei.energy - global.TOWER_CONSUMPTION
           tower.current_range = GetTowerRangeIncrement() + tower.current_range
           if tower.current_range > global.TOWER_MAX_RANGE then
             tower.current_range = global.TOWER_MAX_RANGE
           end
-          --TODO: Scan
+
           if tower.eei.surface ~= nil then
             local enemyCountInRange = tower.eei.surface.count_entities_filtered{position = tower.eei.position, radius = tower.current_range , force="enemy"}
             local nonStructureUnits = 0
@@ -36,16 +34,23 @@ script.on_event({defines.events.on_tick}, function(e)
               local enemiesInRange = tower.eei.surface.find_entities_filtered{position = tower.eei.position, radius = tower.current_range , force="enemy"}
               local nonStructureUnits = 0
               for index,enemy in pairs(enemiesInRange) do
+                
+                local signalIcon = GetSignal(enemy.type)
+                
                 if enemy.type == "unit" then
                   nonStructureUnits = nonStructureUnits + 1
                 elseif enemy.type == "turret" then
                   local WormSignal = FindExistingTag(tower.signals, enemy)
                   if WormSignal == nil then
-                    local signal = tower.eei.force.add_chart_tag(tower.eei.surface, {icon = {type = "virtual", name = "signal-W"}, position = enemy.position})
+                    local signal = tower.eei.force.add_chart_tag(tower.eei.surface, {icon = signalIcon, position = enemy.position})
                     AddTagToEntity(tower, signal, enemy)
                   end
-                --else if enemy.type == "unit-spawner" then
-                  --TODO: Tag enemy structures
+                elseif enemy.type == "unit-spawner" then
+                  local SpawnerSignal = FindExistingTag(tower.signals, enemy)
+                  if SpawnerSignal == nil then
+                    local signal = tower.eei.force.add_chart_tag(tower.eei.surface, {icon = signalIcon, position = enemy.position})
+                    AddTagToEntity(tower, signal, enemy)
+                  end
                 end
               end
             end
@@ -58,7 +63,19 @@ script.on_event({defines.events.on_tick}, function(e)
           if tower.current_range < global.TOWER_MIN_RANGE then
             tower.current_range = global.TOWER_MIN_RANGE
           end
-            --TODO: Clear any signals out of reach
+            for index,sign in pairs(tower.signals) do
+              if(sign ~= nil) then
+                if(sign.unit ~= nil) then
+                  game.print(serpent.block(sign))
+                  local distance = util.distance(tower.eei.position, sign.unit.position)
+                  if distance > tower.current_range then
+                    game.print(sign.signal)
+                    sign.signal.destroy()
+                    tower.signals[index] = nil
+                  end
+                end
+              end
+            end
         end
         --TODO: Clear any invalid signals
       end
@@ -91,8 +108,6 @@ script.on_event({defines.events.on_robot_built_entity,defines.events.on_built_en
       chest = chest,
     }
     ]]--
-    local _signal = entity.force.add_chart_tag(entity.surface, {icon = {type = "virtual", name = "signal-A"}, position = position})
-    AddTagToEntity(global.towers[entity.unit_number],_signal)
 
   end
 end)
@@ -101,7 +116,6 @@ script.on_event({defines.events.on_robot_mined_entity,defines.events.on_player_m
   local entity = event.entity
   if entity.name == "scan-tower" then
     local tower = global.towers[entity.unit_number]
-    game.print(serpent.block(tower))
     for i,sig in pairs(tower.signals) do
       sig.signal.destroy()
     end
@@ -159,4 +173,32 @@ function AddTowerToNextAvailableTick(tower, currentTick)
     end
   end
 
+end
+
+function GetSignal(type)
+  type = type or ""
+
+  local AAI = game.active_mods["aai-signals"]
+
+  if type == "turret" then
+    if AAI == nil then
+      return {type = "virtual", name = "signal-W"}
+    else
+      return {type = "virtual", name = "signal-enemy-turret"}
+    end
+  elseif type == "unit-spawner" then
+    if AAI == nil then
+      return {type = "virtual", name = "signal-S"}
+    else
+      return {type = "virtual", name = "signal-enemy-unit-spawner"}
+    end
+  elseif type == "unit" then
+    if AAI == nil then
+      return {type = "virtual", name = "signal-B"}
+    else
+      return {type = "virtual", name = "signal-enemy-unit"}
+    end
+  end
+
+  return nil
 end

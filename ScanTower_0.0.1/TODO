@@ -1,11 +1,19 @@
 TODO
 
+-Test Destroying Nests/Worms
+-Fix Circuit Connection value
+-Test AAI Signals thoroughly
+
+
+
+
+
+
 Scan Tower Entity
 -Visual
 	-Radar for a start
 	-Substation with Radar on top.
--EEI
-	-Start from accumulator?
+
 -Circuit connection
 
 Scan Tower Object
@@ -13,7 +21,6 @@ Scan Tower Object
 Scan Tower Logic
 	-If power, increase range and scan.
 		-If biters, emit signal.
-		-If Nests/Worms, mark on map.
-			-Marking shows highest HP target.
 	-If no power, reduce range.
 		-For each marks, if range < distance to mark, remove marking.
+
