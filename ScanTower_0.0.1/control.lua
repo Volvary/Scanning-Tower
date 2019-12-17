@@ -12,6 +12,7 @@ script.on_init(function()
     TOWER_MAX_RANGE = 250,
 
     TOWER_INCREMENT_SPEED = 1,
+    TOWER_RESEARCH_INCREMENT = 1,
     TOWER_DECREMENT_SPEED = 2,
   }
 end)
@@ -26,19 +27,23 @@ script.on_event({defines.events.on_tick}, function(e)
           if tower.current_range > global.TOWER_MAX_RANGE then
             tower.current_range = global.TOWER_MAX_RANGE
           end
+          
+          local nonStructureUnits = 0
 
           if tower.eei.surface ~= nil then
             local enemyCountInRange = tower.eei.surface.count_entities_filtered{position = tower.eei.position, radius = tower.current_range , force="enemy"}
-            local nonStructureUnits = 0
             if enemyCountInRange > 0 then
               local enemiesInRange = tower.eei.surface.find_entities_filtered{position = tower.eei.position, radius = tower.current_range , force="enemy"}
-              local nonStructureUnits = 0
-              for index,enemy in pairs(enemiesInRange) do
+              --game.print(serpent.block(enemiesInRange))
+              for index,enemy in ipairs(enemiesInRange) do
                 
+                --game.print(index.." , "..enemy.type)
                 local signalIcon = GetSignal(enemy.type)
                 
                 if enemy.type == "unit" then
+                  --game.print(index)
                   nonStructureUnits = nonStructureUnits + 1
+                  game.print(nonStructureUnits)
                 elseif enemy.type == "turret" then
                   local WormSignal = FindExistingTag(tower.signals, enemy)
                   if WormSignal == nil then
@@ -57,7 +62,10 @@ script.on_event({defines.events.on_tick}, function(e)
           else
             game.print("Surface invalid")
           end
-          tower.eei.get_or_create_control_behavior().output_signal = { type = "virtual", name = "signal-B", count= nonStructureUnits }
+
+          game.print(nonStructureUnits)
+          --tower.eei.get_or_create_control_behavior().output_signal = { {type = "virtual", name = "signal-B"}, count= nonStructureUnits }
+        
         else
           tower.current_range = tower.current_range - global.TOWER_DECREMENT_SPEED
           if tower.current_range < global.TOWER_MIN_RANGE then
@@ -123,16 +131,26 @@ script.on_event({defines.events.on_robot_mined_entity,defines.events.on_player_m
   end
 end)
 
-function GetTowerRangeIncrement() 
+function GetTowerRangeIncrement(tower) 
+  tower = tower or nil
 
   --TODO: Calculate using Research + base increase speed.
+  if tower ~= nil and tower.eei.force.technologies["scan-tower-increment-speed"] then
+    return global.TOWER_INCREMENT_SPEED + global.TOWER_RESEARCH_INCREMENT
+  end
+
   return global.TOWER_INCREMENT_SPEED
 
 end
 
-function GetTowerRangeDecrement() 
+function GetTowerRangeDecrement(tower) 
+  tower = tower or nil
 
   --TODO: Calculate using Research + base increase speed.
+ if tower ~= nil and tower.eei.force.technologies["scan-tower-decrement-speed"] then
+    return global.TOWER_INCREMENT_SPEED + global.TOWER_RESEARCH_INCREMENT
+  end
+
   return global.TOWER_DECREMENT_SPEED
 
 end
